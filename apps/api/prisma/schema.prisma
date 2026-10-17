@@ -1,0 +1,209 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:../data/dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String?
+  googleId     String?       @unique
+  role         String        @default("STUDENT")
+  departmentId String?
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  year         Int?
+  bookmarks    Bookmark[]
+  chatSessions ChatSession[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("users")
+}
+
+model Department {
+  id        String    @id @default(uuid())
+  name      String
+  code      String    @unique
+  users     User[]
+  contacts  Contact[]
+
+  @@map("departments")
+}
+
+model Category {
+  id          String      @id
+  name        String
+  description String?
+  parentId    String?
+  parent      Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[]  @relation("CategoryHierarchy")
+  documents   Document[]
+  faqs        Faq[]
+  procedures  Procedure[]
+  notices     Notice[]
+  events      Event[]
+
+  @@map("categories")
+}
+
+model Document {
+  id          String          @id
+  title       String
+  content     String
+  categoryId  String
+  category    Category        @relation(fields: [categoryId], references: [id])
+  source      String
+  status      String          @default("published")
+  version     Int             @default(1)
+  publishedAt DateTime?
+  chunks      DocumentChunk[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("documents")
+}
+
+model DocumentChunk {
+  id         String   @id @default(uuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunkText  String
+  chunkIndex Int
+  metadata   String?  // JSON stringified metadata
+
+  @@map("document_chunks")
+}
+
+model Faq {
+  id         String        @id
+  question   String
+  answer     String
+  categoryId String
+  category   Category      @relation(fields: [categoryId], references: [id])
+  source     String?
+  status     String        @default("published")
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@map("faqs")
+}
+
+model Contact {
+  id           String        @id
+  name         String
+  designation  String
+  departmentId String?
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  phone        String?
+  email        String?
+  location     String?
+  source       String?
+  status       String        @default("published")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("contacts")
+}
+
+model Procedure {
+  id                String          @id
+  title             String
+  description       String
+  categoryId        String
+  category          Category        @relation(fields: [categoryId], references: [id])
+  eligibility       String?
+  documentsRequired String          // Stored as JSON string
+  fees              String?
+  processingTime    String?
+  source            String?
+  status            String          @default("published")
+  steps             ProcedureStep[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@map("procedures")
+}
+
+model ProcedureStep {
+  id          String    @id @default(uuid())
+  procedureId String
+  procedure   Procedure @relation(fields: [procedureId], references: [id], onDelete: Cascade)
+  stepNumber  Int
+  title       String
+  description String?
+
+  @@map("procedure_steps")
+}
+
+model Notice {
+  id          String        @id
+  title       String
+  content     String
+  categoryId  String
+  category    Category      @relation(fields: [categoryId], references: [id])
+  source      String?
+  publishedAt DateTime      @default(now())
+  expiresAt   DateTime?
+  issuedBy    String?
+  status      String        @default("published")
+  createdAt   DateTime      @default(now())
+
+  @@map("notices")
+}
+
+model Event {
+  id          String        @id
+  title       String
+  description String
+  categoryId  String
+  category    Category      @relation(fields: [categoryId], references: [id])
+  location    String?
+  source      String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  status      String        @default("published")
+  createdAt   DateTime      @default(now())
+
+  @@map("events")
+}
+
+model Bookmark {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entityType String
+  entityId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, entityType, entityId])
+  @@map("bookmarks")
+}
+
+model ChatSession {
+  id        String        @id @default(uuid())
+  userId    String?
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  title     String        @default("Campus Inquiry")
+  messages  ChatMessage[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String      // 'user' | 'assistant' | 'system'
+  content   String
+  sources   String?     // JSON stringified sources
+  createdAt DateTime    @default(now())
+
+  @@map("chat_messages")
+}

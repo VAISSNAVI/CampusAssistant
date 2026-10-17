@@ -1,0 +1,24 @@
+{
+  "name": "campus-assistant-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:web",
+    "dev:all": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "npm --workspace=@campus-assistant/api run dev",
+    "dev:web": "npm --workspace=@campus-assistant/admin run dev",
+    "dev:mobile": "npm --workspace=@campus-assistant/mobile run start",
+    "build": "npm --workspaces run build --if-present",
+    "test": "npm --workspaces run test --if-present",
+    "db:generate": "npm --workspace=@campus-assistant/api run db:generate",
+    "db:migrate": "npm --workspace=@campus-assistant/api run db:migrate",
+    "db:seed": "npm --workspace=@campus-assistant/api run db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
